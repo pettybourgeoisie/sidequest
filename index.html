@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidequest - Goat Format</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .ticket {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .ticket h3 {
+            margin: 0 0 10px;
+        }
+        .ticket button {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .ticket button:hover {
+            background-color: #218838;
+        }
+    </style>
+    <script>
+        async function loadTickets() {
+            try {
+                // Load tickets.json
+                const response = await fetch('tickets.json');
+                const tickets = await response.json();
+
+                // Select 3 random tickets
+                const randomTickets = tickets.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+                // Display tickets
+                const ticketsContainer = document.getElementById('tickets-container');
+                ticketsContainer.innerHTML = '';
+
+                randomTickets.forEach((ticket, index) => {
+                    const ticketDiv = document.createElement('div');
+                    ticketDiv.className = 'ticket';
+                    ticketDiv.innerHTML = `
+                        <h3>${ticket.ticket_name}</h3>
+                        <p>${ticket.description}</p>
+                        <button onclick="selectTicket(${index})">Select</button>
+                    `;
+                    ticketsContainer.appendChild(ticketDiv);
+                });
+
+                // Store tickets globally for selection
+                window.randomTickets = randomTickets;
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+            }
+        }
+
+        async function selectTicket(index) {
+            const ticket = window.randomTickets[index];
+
+            // Construct API query
+            const params = new URLSearchParams({ format: 'goat' });
+            for (const [key, value] of Object.entries(ticket.conditions)) {
+                params.append(key, Array.isArray(value) ? value.join('|') : value);
+            }
+
+            const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?${params}`;
+
+            try {
+                // Fetch cards from API
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                // Randomly select the required number of cards
+                const cards = data.data.sort(() => 0.5 - Math.random()).slice(0, ticket.spins);
+
+                // Display results
+                const resultsContainer = document.getElementById('results-container');
+                resultsContainer.innerHTML = '<h2>Results</h2>';
+                cards.forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.textContent = card.name;
+                    resultsContainer.appendChild(cardDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching cards:', error);
+            }
+        }
+
+        window.onload = loadTickets;
+    </script>
+</head>
+<body>
+    <h1>Sidequest - Goat Format</h1>
+    <div id="tickets-container"></div>
+    <div id="results-container"></div>
+</body>
+</html>
