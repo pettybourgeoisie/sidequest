@@ -36,7 +36,7 @@
         async function loadTickets() {
             try {
                 // Load tickets.json
-                const response = await fetch('tickets.json');
+                const response = await fetch('./tickets.json');
                 const tickets = await response.json();
 
                 // Select 3 random tickets
