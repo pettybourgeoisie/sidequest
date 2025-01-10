@@ -12,7 +12,7 @@
 	"description": "Five devilish little buggers.",
 	"spins": 5,
 	"conditions": {
-		"race": "Fiend"
+		"race": "fiend"
 	}
  },
 	{
@@ -20,7 +20,7 @@
 	"description": "Three chances at paradise.",
 	"spins": 3,
 	"conditions": {
-		"race": "Field"
+		"race": "field"
 	}
  },
  	{
@@ -28,7 +28,7 @@
 	"description": "Afraid of the dark?",
 	"spins": 4,
 	"conditions": {
-		"attribute": "Dark"
+		"attribute": "dark"
 	}
  },
  {
@@ -36,7 +36,7 @@
 	"description": "No.",
 	"spins": 10,
 	"conditions": {
-	"card_type": "Trap",
+	"card_type": "trap",
     "race": "Counter"
 	}
  },
