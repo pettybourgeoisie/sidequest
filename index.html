@@ -31,12 +31,23 @@
         .ticket button:hover {
             background-color: #218838;
         }
+        #bank {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
     </style>
     <script>
+        let bank = 500;
+
+        function updateBankDisplay() {
+            const bankDisplay = document.getElementById('bank');
+            bankDisplay.textContent = `Bank: ${bank} points`;
+        }
+
         async function loadTickets() {
             try {
                 // Load tickets.json
-                const response = await fetch('./tickets.json');
+                const response = await fetch('tickets.json');
                 const tickets = await response.json();
 
                 // Select 3 random tickets
@@ -52,6 +63,7 @@
                     ticketDiv.innerHTML = `
                         <h3>${ticket.ticket_name}</h3>
                         <p>${ticket.description}</p>
+                        <p>Cost: ${ticket.cost} points</p>
                         <button onclick="selectTicket(${index})">Select</button>
                     `;
                     ticketsContainer.appendChild(ticketDiv);
@@ -66,6 +78,16 @@
 
         async function selectTicket(index) {
             const ticket = window.randomTickets[index];
+
+            // Check if the player has enough points
+            if (bank < ticket.cost) {
+                alert('Not enough points to select this ticket!');
+                return;
+            }
+
+            // Deduct cost from bank
+            bank -= ticket.cost;
+            updateBankDisplay();
 
             // Construct API query
             const params = new URLSearchParams({ format: 'goat' });
@@ -96,11 +118,15 @@
             }
         }
 
-        window.onload = loadTickets;
+        window.onload = () => {
+            updateBankDisplay();
+            loadTickets();
+        };
     </script>
 </head>
 <body>
     <h1>Sidequest - Goat Format</h1>
+    <div id="bank">Bank: 500 points</div>
     <div id="tickets-container"></div>
     <div id="results-container"></div>
 </body>
