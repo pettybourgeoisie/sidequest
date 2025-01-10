@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trunk - Sidequest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #trunk {
+            list-style-type: none;
+            padding: 0;
+        }
+        #trunk li {
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #nav button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #nav button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script>
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        function newGame() {
+            if (confirm('Are you sure you want to start a new game? This will reset your Bank and clear your Trunk.')) {
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        }
+
+        window.onload = () => {
+            const trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+            const trunkList = document.getElementById('trunk');
+
+            if (trunk.length === 0) {
+                trunkList.innerHTML = '<li>Your Trunk is empty!</li>';
+            } else {
+                trunk.forEach(card => {
+                    const li = document.createElement('li');
+                    li.textContent = card;
+                    trunkList.appendChild(li);
+                });
+            }
+        };
+    </script>
+</head>
+<body>
+    <div id="nav">
+        <button onclick="goBack()">Back to Game</button>
+        <button onclick="newGame()">New Game</button>
+    </div>
+    <h1>Your Trunk</h1>
+    <ul id="trunk"></ul>
+</body>
+</html>
