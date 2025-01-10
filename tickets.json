@@ -1,0 +1,51 @@
+[
+	{
+	"ticket_name": "Trinity",
+	"description": "Holier than thou.",
+	"spins": 1,
+	"conditions": {
+		"name": ["Pot of Greed", "Graceful Charity", "Delinquent Duo"]
+	}
+ },
+	{
+	"ticket_name": "Fiends",
+	"description": "Five devilish little buggers.",
+	"spins": 5,
+	"conditions": {
+		"monster_type": "Fiend"
+	}
+ },
+	{
+	"ticket_name": "Field Spells",
+	"description": "Three chances at paradise.",
+	"spins": 3,
+	"conditions": {
+		"card_sub_type": "Field"
+	}
+ },
+ 	{
+	"ticket_name": "Darks",
+	"description": "Afraid of the dark?",
+	"spins": 4,
+	"conditions": {
+		"attribute": "Dark"
+	}
+ },
+ {
+	"ticket_name": "Counter Traps",
+	"description": "No.",
+	"spins": 10,
+	"conditions": {
+	"card_type": "Trap",
+    "card_sub_type": "Counter"
+	}
+ },
+ 	{
+	"ticket_name": "Level 6s",
+	"description": "One tribute, please.",
+	"spins": 3,
+	"conditions": {
+		"level": 6
+	}
+ }
+]
