@@ -36,7 +36,6 @@
 	"description": "No.",
 	"spins": 10,
 	"conditions": {
-	"card_type": "trap",
     "race": "Counter"
 	}
  },
