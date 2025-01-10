@@ -12,7 +12,7 @@
 	"description": "Five devilish little buggers.",
 	"spins": 5,
 	"conditions": {
-		"monster_type": "Fiend"
+		"race": "Fiend"
 	}
  },
 	{
@@ -20,7 +20,7 @@
 	"description": "Three chances at paradise.",
 	"spins": 3,
 	"conditions": {
-		"card_sub_type": "Field"
+		"race": "Field"
 	}
  },
  	{
@@ -37,7 +37,7 @@
 	"spins": 10,
 	"conditions": {
 	"card_type": "Trap",
-    "card_sub_type": "Counter"
+    "race": "Counter"
 	}
  },
  	{
