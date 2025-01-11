@@ -33,11 +33,9 @@
         }
         .main-deck {
             grid-template-rows: repeat(6, 1fr);
-            height: auto;
         }
         .side-fusion-deck {
             grid-template-rows: 1fr;
-            height: auto;
         }
         .card {
             width: 100px;
@@ -62,32 +60,34 @@
     </style>
     <script>
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-        let cardInstances = []; // Unique card instances
+        let cardInstances = JSON.parse(localStorage.getItem('cardInstances')) || [];
         let mainDeck = JSON.parse(localStorage.getItem('mainDeck')) || [];
         let sideDeck = JSON.parse(localStorage.getItem('sideDeck')) || [];
         let fusionDeck = JSON.parse(localStorage.getItem('fusionDeck')) || [];
 
         async function fetchCardImages() {
-            cardInstances = trunk.map((cardName, index) => ({
-                id: `card-${index}-${Date.now()}`,
-                name: cardName,
-                imageUrl: `https://storage.googleapis.com/ygoprodeck.com/pics_small/${encodeURIComponent(cardName)}.jpg`, // Placeholder
-                state: "trunk"
-            }));
+            if (cardInstances.length === 0) {
+                cardInstances = trunk.map((cardName, index) => ({
+                    id: `card-${index}-${Date.now()}`,
+                    name: cardName,
+                    imageUrl: `https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg`, // Placeholder for testing
+                    state: "trunk"
+                }));
+            }
             displayTrunk();
         }
 
-        function displayTrunk() {
+        function displayTrunk(filteredCards = null) {
             const trunkContainer = document.getElementById('trunk');
             trunkContainer.innerHTML = '';
+            const cardsToDisplay = filteredCards || cardInstances.filter(card => card.state === "trunk");
 
-            const cardsInTrunk = cardInstances.filter(card => card.state === "trunk");
-            if (cardsInTrunk.length === 0) {
+            if (cardsToDisplay.length === 0) {
                 trunkContainer.innerHTML = '<p class="message">Cards not found!</p>';
                 return;
             }
 
-            cardsInTrunk.forEach(card => {
+            cardsToDisplay.forEach(card => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card';
                 cardDiv.draggable = true;
@@ -121,18 +121,26 @@
             const cardId = event.dataTransfer.getData('text/plain');
             const cardData = cardInstances.find(card => card.id === cardId);
 
-            if (!cardData || cardData.state !== "trunk") {
+            if (!cardData) return;
+
+            if (cardData.state !== "trunk" && deckId === "trunk") {
+                cardData.state = "trunk";
+                saveState();
+                displayTrunk();
+                createDeckGrid('main-deck', 6, mainDeck);
+                createDeckGrid('side-deck', 1, sideDeck);
+                createDeckGrid('fusion-deck', 1, fusionDeck);
                 return;
             }
 
             const deckGrid = document.getElementById(deckId);
             const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
 
-            if (emptySlot) {
+            if (emptySlot && cardData.state === "trunk") {
                 cardData.state = deckId;
                 addCardToDeckGrid(cardData, deckId);
                 displayTrunk();
-                saveDecks();
+                saveState();
             }
         }
 
@@ -151,8 +159,8 @@
                 cardDiv.addEventListener('dragend', (e) => {
                     if (!deckGrid.contains(cardDiv)) {
                         cardData.state = "trunk";
+                        saveState();
                         displayTrunk();
-                        saveDecks();
                     }
                 });
                 emptySlot.appendChild(cardDiv);
@@ -165,18 +173,19 @@
             displayTrunk(filteredCards);
         }
 
-        function saveDecks() {
+        function saveState() {
+            localStorage.setItem('cardInstances', JSON.stringify(cardInstances));
+            localStorage.setItem('trunk', JSON.stringify(cardInstances.filter(card => card.state === "trunk").map(card => card.name)));
             localStorage.setItem('mainDeck', JSON.stringify(cardInstances.filter(card => card.state === "main-deck")));
             localStorage.setItem('sideDeck', JSON.stringify(cardInstances.filter(card => card.state === "side-deck")));
             localStorage.setItem('fusionDeck', JSON.stringify(cardInstances.filter(card => card.state === "fusion-deck")));
-            localStorage.setItem('trunk', JSON.stringify(cardInstances.filter(card => card.state === "trunk").map(card => card.name)));
         }
 
         window.onload = async () => {
             await fetchCardImages();
-            createDeckGrid('main-deck', 6, JSON.parse(localStorage.getItem('mainDeck')) || []);
-            createDeckGrid('side-deck', 1, JSON.parse(localStorage.getItem('sideDeck')) || []);
-            createDeckGrid('fusion-deck', 1, JSON.parse(localStorage.getItem('fusionDeck')) || []);
+            createDeckGrid('main-deck', 6, cardInstances.filter(card => card.state === "main-deck"));
+            createDeckGrid('side-deck', 1, cardInstances.filter(card => card.state === "side-deck"));
+            createDeckGrid('fusion-deck', 1, cardInstances.filter(card => card.state === "fusion-deck"));
 
             const searchInput = document.getElementById('search-bar');
             searchInput.addEventListener('input', (e) => {
