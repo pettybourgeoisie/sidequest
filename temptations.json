@@ -8,7 +8,7 @@
             "Graceful Charity",
             "Delinquent Duo"
         ]
-    }
+    },
 
 {
         "temptation_name": "Turbo Package",
@@ -26,7 +26,7 @@
             "Dekoichi the Battlechanted Locomotive",
             "Magician of Faith"
         ]
-    }
+    },
 
 {
         "temptation_name": "Warrior Package",
@@ -44,7 +44,7 @@
             "Reinforcement of the Army",
             "Reinforcement of the Army"
         ]
-    }
+    },
 
 {
         "temptation_name": "Goat Control Package",
@@ -62,7 +62,5 @@
             "Tsukuyomi",
             "Tsukuyomi"
         ]
-    }        
-
-
+    }
 ]
