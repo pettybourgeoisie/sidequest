@@ -3,74 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trunk - Sidequest</title>
+    <title>Your Trunk</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            text-align: center;
         }
-        #trunk {
-            list-style-type: none;
-            padding: 0;
+        .search-bar {
+            margin-bottom: 20px;
         }
-        #trunk li {
-            margin: 5px 0;
-            padding: 10px;
+        .card {
+            display: inline-block;
+            margin: 10px;
+            width: 100px;
+            height: 140px;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        #nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        #nav button {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        #nav button:hover {
-            background-color: #0056b3;
+        .message {
+            margin-top: 20px;
+            font-style: italic;
+            color: #777;
         }
     </style>
     <script>
-        function goBack() {
-            window.location.href = 'index.html';
+        let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+
+        async function fetchCardImages() {
+            const cardImages = [];
+            for (const cardName of trunk) {
+                const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg";
+                    cardImages.push({ name: cardName, imageUrl });
+                } catch (error) {
+                    console.error(`Error fetching image for ${cardName}:`, error);
+                    cardImages.push({ name: cardName, imageUrl: "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg" });
+                }
+            }
+            displayTrunk(cardImages);
         }
 
-        function newGame() {
-            if (confirm('Are you sure you want to start a new game? This will reset your Bank and clear your Trunk.')) {
-                localStorage.clear();
-                window.location.href = 'index.html';
+        function displayTrunk(cards) {
+            const trunkContainer = document.getElementById('trunk');
+            trunkContainer.innerHTML = '';
+
+            if (cards.length === 0) {
+                trunkContainer.innerHTML = '<p class="message">Cards not found!</p>';
+                return;
             }
+
+            cards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.innerHTML = `<img src="${card.imageUrl}" alt="${card.name}" title="${card.name}">`;
+                trunkContainer.appendChild(cardDiv);
+            });
         }
 
-        window.onload = () => {
-            const trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-            const trunkList = document.getElementById('trunk');
+        function searchTrunk(query) {
+            query = query.toLowerCase();
+            const filteredCards = cardImages.filter(card => card.name.toLowerCase().includes(query));
+            displayTrunk(filteredCards);
+        }
 
-            if (trunk.length === 0) {
-                trunkList.innerHTML = '<li>Your Trunk is empty!</li>';
-            } else {
-                trunk.forEach(card => {
-                    const li = document.createElement('li');
-                    li.textContent = card;
-                    trunkList.appendChild(li);
-                });
-            }
+        let cardImages = [];
+
+        window.onload = async () => {
+            cardImages = await fetchCardImages();
+            const searchInput = document.getElementById('search-bar');
+            searchInput.addEventListener('input', (e) => {
+                searchTrunk(e.target.value);
+            });
         };
     </script>
 </head>
 <body>
-    <div id="nav">
-        <button onclick="goBack()">Back to Game</button>
-        <button onclick="newGame()">New Game</button>
-    </div>
     <h1>Your Trunk</h1>
-    <ul id="trunk"></ul>
+    <input id="search-bar" class="search-bar" type="text" placeholder="Search cards...">
+    <div id="trunk"></div>
+    <button onclick="window.location.href='index.html'" style="margin-top: 20px;">Back to Game</button>
 </body>
 </html>
