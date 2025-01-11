@@ -10,22 +10,23 @@
             margin: 20px;
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
+            gap: 20px;
         }
         .container {
-            width: 48%;
-            margin-bottom: 20px;
+            flex: 1;
+        }
+        .trunk-container {
+            max-width: 48%;
         }
         .deckbuilder {
             display: flex;
             flex-direction: column;
-            width: 100%;
+            gap: 20px;
         }
         .grid {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             gap: 5px;
-            margin-bottom: 20px;
             border: 1px solid #ccc;
             padding: 10px;
             background-color: #f9f9f9;
@@ -43,10 +44,7 @@
             height: 140px;
             border: 1px solid #ccc;
             border-radius: 5px;
-        }
-        .card img {
-            width: 100%;
-            height: 100%;
+            display: inline-block;
         }
         .deck-slot {
             border: 2px dashed #bbb;
@@ -64,44 +62,38 @@
     </style>
     <script>
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-        let cardImages = [];
+        let cardInstances = []; // Unique card instances
         let mainDeck = JSON.parse(localStorage.getItem('mainDeck')) || [];
         let sideDeck = JSON.parse(localStorage.getItem('sideDeck')) || [];
         let fusionDeck = JSON.parse(localStorage.getItem('fusionDeck')) || [];
 
         async function fetchCardImages() {
-            cardImages = [];
-            for (const cardName of trunk) {
-                const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
-                try {
-                    const response = await fetch(apiUrl);
-                    const data = await response.json();
-                    const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg";
-                    cardImages.push({ name: cardName, imageUrl });
-                } catch (error) {
-                    console.error(`Error fetching image for ${cardName}:`, error);
-                    cardImages.push({ name: cardName, imageUrl: "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg" });
-                }
-            }
-            displayTrunk(cardImages);
+            cardInstances = trunk.map((cardName, index) => ({
+                id: `card-${index}-${Date.now()}`,
+                name: cardName,
+                imageUrl: `https://storage.googleapis.com/ygoprodeck.com/pics_small/${encodeURIComponent(cardName)}.jpg`, // Placeholder
+                state: "trunk"
+            }));
+            displayTrunk();
         }
 
-        function displayTrunk(cards) {
+        function displayTrunk() {
             const trunkContainer = document.getElementById('trunk');
             trunkContainer.innerHTML = '';
 
-            if (cards.length === 0) {
+            const cardsInTrunk = cardInstances.filter(card => card.state === "trunk");
+            if (cardsInTrunk.length === 0) {
                 trunkContainer.innerHTML = '<p class="message">Cards not found!</p>';
                 return;
             }
 
-            cards.forEach(card => {
+            cardsInTrunk.forEach(card => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card';
                 cardDiv.draggable = true;
                 cardDiv.innerHTML = `<img src="${card.imageUrl}" alt="${card.name}" title="${card.name}">`;
                 cardDiv.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', JSON.stringify(card));
+                    e.dataTransfer.setData('text/plain', card.id);
                 });
                 trunkContainer.appendChild(cardDiv);
             });
@@ -115,34 +107,36 @@
                 const slot = document.createElement('div');
                 slot.className = 'deck-slot';
                 slot.addEventListener('dragover', (e) => e.preventDefault());
-                slot.addEventListener('drop', (e) => handleDrop(e, deck, id));
-
-                if (deck[i]) {
-                    const cardData = deck[i];
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'card';
-                    cardDiv.innerHTML = `<img src="${cardData.imageUrl}" alt="${cardData.name}" title="${cardData.name}">`;
-                    cardDiv.draggable = true;
-                    cardDiv.addEventListener('dragstart', (e) => {
-                        e.dataTransfer.setData('text/plain', JSON.stringify(cardData));
-                        removeCardFromDeck(deck, cardData);
-                        saveDecks();
-                        displayTrunk(cardImages);
-                    });
-                    slot.appendChild(cardDiv);
-                }
+                slot.addEventListener('drop', (e) => handleDrop(e, id));
                 grid.appendChild(slot);
             }
+
+            deck.forEach(card => {
+                addCardToDeckGrid(card, id);
+            });
         }
 
-        function handleDrop(event, deck, deckId) {
+        function handleDrop(event, deckId) {
             event.preventDefault();
-            const cardData = JSON.parse(event.dataTransfer.getData('text/plain'));
+            const cardId = event.dataTransfer.getData('text/plain');
+            const cardData = cardInstances.find(card => card.id === cardId);
 
-            if (!trunk.find(card => card === cardData.name)) {
+            if (!cardData || cardData.state !== "trunk") {
                 return;
             }
 
+            const deckGrid = document.getElementById(deckId);
+            const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
+
+            if (emptySlot) {
+                cardData.state = deckId;
+                addCardToDeckGrid(cardData, deckId);
+                displayTrunk();
+                saveDecks();
+            }
+        }
+
+        function addCardToDeckGrid(cardData, deckId) {
             const deckGrid = document.getElementById(deckId);
             const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
 
@@ -152,47 +146,37 @@
                 cardDiv.innerHTML = `<img src="${cardData.imageUrl}" alt="${cardData.name}" title="${cardData.name}">`;
                 cardDiv.draggable = true;
                 cardDiv.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', JSON.stringify(cardData));
-                    removeCardFromDeck(deck, cardData);
-                    saveDecks();
-                    displayTrunk(cardImages);
+                    e.dataTransfer.setData('text/plain', cardData.id);
+                });
+                cardDiv.addEventListener('dragend', (e) => {
+                    if (!deckGrid.contains(cardDiv)) {
+                        cardData.state = "trunk";
+                        displayTrunk();
+                        saveDecks();
+                    }
                 });
                 emptySlot.appendChild(cardDiv);
-                deck.push(cardData);
-
-                trunk = trunk.filter(card => card !== cardData.name);
-                saveDecks();
-                localStorage.setItem('trunk', JSON.stringify(trunk));
-                displayTrunk(cardImages);
             }
-        }
-
-        function removeCardFromDeck(deck, cardData) {
-            const index = deck.findIndex(card => card.name === cardData.name);
-            if (index !== -1) {
-                deck.splice(index, 1);
-                trunk.push(cardData.name);
-                localStorage.setItem('trunk', JSON.stringify(trunk));
-            }
-        }
-
-        function saveDecks() {
-            localStorage.setItem('mainDeck', JSON.stringify(mainDeck));
-            localStorage.setItem('sideDeck', JSON.stringify(sideDeck));
-            localStorage.setItem('fusionDeck', JSON.stringify(fusionDeck));
         }
 
         function searchTrunk(query) {
             query = query.toLowerCase();
-            const filteredCards = cardImages.filter(card => card.name.toLowerCase().includes(query));
+            const filteredCards = cardInstances.filter(card => card.state === "trunk" && card.name.toLowerCase().includes(query));
             displayTrunk(filteredCards);
+        }
+
+        function saveDecks() {
+            localStorage.setItem('mainDeck', JSON.stringify(cardInstances.filter(card => card.state === "main-deck")));
+            localStorage.setItem('sideDeck', JSON.stringify(cardInstances.filter(card => card.state === "side-deck")));
+            localStorage.setItem('fusionDeck', JSON.stringify(cardInstances.filter(card => card.state === "fusion-deck")));
+            localStorage.setItem('trunk', JSON.stringify(cardInstances.filter(card => card.state === "trunk").map(card => card.name)));
         }
 
         window.onload = async () => {
             await fetchCardImages();
-            createDeckGrid('main-deck', 6, mainDeck);
-            createDeckGrid('side-deck', 1, sideDeck);
-            createDeckGrid('fusion-deck', 1, fusionDeck);
+            createDeckGrid('main-deck', 6, JSON.parse(localStorage.getItem('mainDeck')) || []);
+            createDeckGrid('side-deck', 1, JSON.parse(localStorage.getItem('sideDeck')) || []);
+            createDeckGrid('fusion-deck', 1, JSON.parse(localStorage.getItem('fusionDeck')) || []);
 
             const searchInput = document.getElementById('search-bar');
             searchInput.addEventListener('input', (e) => {
@@ -202,7 +186,7 @@
     </script>
 </head>
 <body>
-    <div class="container">
+    <div class="container trunk-container">
         <h1>Your Trunk</h1>
         <input id="search-bar" class="search-bar" type="text" placeholder="Search cards...">
         <div id="trunk"></div>
