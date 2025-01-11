@@ -3,208 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Trunk and Deckbuilder</title>
+    <title>Trunk - Sidequest</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
         }
-        .container {
-            flex: 1;
+        #trunk {
+            list-style-type: none;
+            padding: 0;
         }
-        .trunk-container {
-            max-width: 48%;
-        }
-        .deckbuilder {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            border: 1px solid #ccc;
+        #trunk li {
+            margin: 5px 0;
             padding: 10px;
-            background-color: #f9f9f9;
-        }
-        .main-deck {
-            grid-template-rows: repeat(6, 1fr);
-        }
-        .side-fusion-deck {
-            grid-template-rows: 1fr;
-        }
-        .trunk-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
-        }
-        .card {
-            width: 90px;
-            height: 130px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        .card img {
-            width: 100%;
-            height: 100%;
-        }
-        .deck-slot {
-            border: 2px dashed #bbb;
-            min-height: 100px;
-            background-color: #fff;
-        }
-        .search-bar {
+        #nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
-        .message {
-            margin-top: 20px;
-            font-style: italic;
-            color: #777;
+        #nav button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #nav button:hover {
+            background-color: #0056b3;
         }
     </style>
     <script>
-        let cardInstances = JSON.parse(localStorage.getItem('cardInstances')) || [];
+        function goBack() {
+            window.location.href = 'index.html';
+        }
 
-        function displayTrunk(filteredCards = null) {
-            const trunkContainer = document.getElementById('trunk');
-            trunkContainer.innerHTML = '';
-            trunkContainer.classList.add('trunk-grid');
-
-            const cardsToDisplay = filteredCards || cardInstances.filter(card => card.state === "trunk");
-
-            if (cardsToDisplay.length === 0) {
-                trunkContainer.innerHTML = '<p class="message">Cards not found!</p>';
-                return;
+        function newGame() {
+            if (confirm('Are you sure you want to start a new game? This will reset your Bank and clear your Trunk.')) {
+                localStorage.clear();
+                window.location.href = 'index.html';
             }
-
-            cardsToDisplay.forEach(card => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
-                cardDiv.draggable = true;
-                cardDiv.innerHTML = `<img src="${card.imageUrl}" alt="${card.name}" title="${card.name}">`;
-                cardDiv.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', card.id);
-                });
-                cardDiv.addEventListener('dragend', () => saveState());
-                trunkContainer.appendChild(cardDiv);
-            });
-        }
-
-        function createDeckGrid(id, rows) {
-            const grid = document.getElementById(id);
-            grid.innerHTML = '';
-
-            for (let i = 0; i < rows * 10; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'deck-slot';
-                slot.addEventListener('dragover', (e) => e.preventDefault());
-                slot.addEventListener('drop', (e) => handleDrop(e, id));
-                grid.appendChild(slot);
-            }
-        }
-
-        function handleDrop(event, deckId) {
-            event.preventDefault();
-            const cardId = event.dataTransfer.getData('text/plain');
-            const cardData = cardInstances.find(card => card.id === cardId);
-
-            if (!cardData) return;
-
-            const deckGrid = document.getElementById(deckId);
-            const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
-
-            if (deckId === "trunk") {
-                cardData.state = "trunk";
-                saveState();
-                displayTrunk();
-                refreshDecks();
-                return;
-            }
-
-            if (emptySlot && cardData.state === "trunk") {
-                cardData.state = deckId;
-                addCardToDeckGrid(cardData, deckId);
-                displayTrunk();
-                saveState();
-            } else if (emptySlot && cardData.state === deckId) {
-                cardData.state = "trunk";
-                displayTrunk();
-                saveState();
-            }
-        }
-
-        function addCardToDeckGrid(cardData, deckId) {
-            const deckGrid = document.getElementById(deckId);
-            const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
-
-            if (emptySlot) {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
-                cardDiv.innerHTML = `<img src="${cardData.imageUrl}" alt="${cardData.name}" title="${cardData.name}">`;
-                cardDiv.draggable = true;
-                cardDiv.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', cardData.id);
-                });
-                cardDiv.addEventListener('dragend', (e) => {
-                    if (!deckGrid.contains(cardDiv)) {
-                        cardData.state = "trunk";
-                        saveState();
-                        displayTrunk();
-                    }
-                });
-                emptySlot.appendChild(cardDiv);
-            }
-        }
-
-        function searchTrunk(query) {
-            query = query.toLowerCase();
-            const filteredCards = cardInstances.filter(card => card.state === "trunk" && card.name.toLowerCase().includes(query));
-            displayTrunk(filteredCards);
-        }
-
-        function saveState() {
-            localStorage.setItem('cardInstances', JSON.stringify(cardInstances));
-        }
-
-        function refreshDecks() {
-            createDeckGrid('main-deck', 6);
-            createDeckGrid('side-deck', 1);
-            createDeckGrid('fusion-deck', 1);
-            const mainDeck = cardInstances.filter(card => card.state === "main-deck");
-            const sideDeck = cardInstances.filter(card => card.state === "side-deck");
-            const fusionDeck = cardInstances.filter(card => card.state === "fusion-deck");
-            mainDeck.forEach(card => addCardToDeckGrid(card, "main-deck"));
-            sideDeck.forEach(card => addCardToDeckGrid(card, "side-deck"));
-            fusionDeck.forEach(card => addCardToDeckGrid(card, "fusion-deck"));
         }
 
         window.onload = () => {
-            displayTrunk();
-            refreshDecks();
-            document.getElementById('search-bar').addEventListener('input', (e) => {
-                searchTrunk(e.target.value);
-            });
+            const trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+            const trunkList = document.getElementById('trunk');
+
+            if (trunk.length === 0) {
+                trunkList.innerHTML = '<li>Your Trunk is empty!</li>';
+            } else {
+                trunk.forEach(card => {
+                    const li = document.createElement('li');
+                    li.textContent = card;
+                    trunkList.appendChild(li);
+                });
+            }
         };
     </script>
 </head>
 <body>
-    <div class="container trunk-container">
-        <h1>Your Trunk</h1>
-        <input id="search-bar" class="search-bar" type="text" placeholder="Search cards...">
-        <div id="trunk"></div>
+    <div id="nav">
+        <button onclick="goBack()">Back to Game</button>
+        <button onclick="newGame()">New Game</button>
     </div>
-    <div class="container deckbuilder">
-        <h2>Main Deck</h2>
-        <div id="main-deck" class="grid main-deck"></div>
-        <h2>Side Deck</h2>
-        <div id="side-deck" class="grid side-fusion-deck"></div>
-        <h2>Fusion Deck</h2>
-        <div id="fusion-deck" class="grid side-fusion-deck"></div>
-        <button onclick="window.location.href='index.html'" style="margin-top: 20px;">Back to Game</button>
-    </div>
+    <h1>Your Trunk</h1>
+    <ul id="trunk"></ul>
 </body>
 </html>
