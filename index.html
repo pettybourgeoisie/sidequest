@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sidequest</title>
+    <title>Sidequest - Tickets</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,10 +40,23 @@
             font-size: 1.2em;
             margin-bottom: 20px;
         }
+        #last-results {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #333;
+        }
+        #last-results ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #last-results li {
+            margin: 5px 0;
+        }
     </style>
     <script>
         let bank = parseInt(localStorage.getItem('bank')) || 500;
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+        let lastResults = [];
 
         async function loadTickets() {
             try {
@@ -68,7 +81,7 @@
                     ticketDiv.innerHTML = `
                         <h3>${ticket.ticket_name}</h3>
                         <p>${ticket.description}</p>
-                        <p>Cost: ${ticket.cost} points</p>
+                        <p>Cost: ${ticket.cost > 0 ? ticket.cost + ' points' : '+' + Math.abs(ticket.cost) + ' points'}</p>
                         <button onclick="selectTicket(${index})">Select</button>
                     `;
                     ticketsContainer.appendChild(ticketDiv);
@@ -86,52 +99,63 @@
             // Apply cost to bank
             bank -= ticket.cost;
 
-            // Fetch cards based on ticket conditions
-            let apiUrl = 'https://db.ygoprodeck.com/api/v7/cardinfo.php?&format=goat';
-            for (const [key, value] of Object.entries(ticket.conditions)) {
-                apiUrl += `&${key}=${Array.isArray(value) ? value.join('|') : value}`;
-            }
-
+            // Fetch cards based on conditions
             try {
-                const response = await fetch(apiUrl);
+                let query = `https://db.ygoprodeck.com/api/v7/cardinfo.php?format=goat`;
+                for (const [key, value] of Object.entries(ticket.conditions)) {
+                    if (Array.isArray(value)) {
+                        query += `&${key}=${value.join('|')}`;
+                    } else {
+                        query += `&${key}=${value}`;
+                    }
+                }
+
+                const response = await fetch(query);
                 const data = await response.json();
                 const cards = data.data;
 
-                // Select random cards based on ticket spins
-                const selectedCards = [];
-                while (selectedCards.length < ticket.spins && cards.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * cards.length);
-                    selectedCards.push(cards.splice(randomIndex, 1)[0].name);
+                // Select random cards based on spins
+                lastResults = [];
+                for (let i = 0; i < ticket.spins; i++) {
+                    const randomCard = cards[Math.floor(Math.random() * cards.length)];
+                    trunk.push(randomCard.name);
+                    lastResults.push(randomCard.name);
                 }
 
-                trunk.push(...selectedCards);
-
-                // Save updates
+                // Save data
                 localStorage.setItem('bank', bank);
                 localStorage.setItem('trunk', JSON.stringify(trunk));
 
-                // Update bank display
+                // Update UI
                 document.getElementById('bank').textContent = `Bank: ${bank} points`;
-
-                // Reroll tickets
+                displayLastResults();
                 loadTickets();
-
             } catch (error) {
-                console.error('Error selecting ticket:', error);
+                console.error('Error fetching cards:', error);
+            }
+        }
+
+        function displayLastResults() {
+            const lastResultsContainer = document.getElementById('last-results');
+            if (lastResults.length > 0) {
+                lastResultsContainer.innerHTML = '<strong>Last Results:</strong><ul>' +
+                    lastResults.map(result => `<li>${result}</li>`).join('') + '</ul>';
+            } else {
+                lastResultsContainer.innerHTML = '';
             }
         }
 
         window.onload = () => {
             document.getElementById('bank').textContent = `Bank: ${bank} points`;
+            displayLastResults();
             loadTickets();
         };
     </script>
 </head>
 <body>
-    <h1>Sidequest</h1>
+    <h1>Sidequest - Select Your Ticket</h1>
     <div id="bank">Bank: 500 points</div>
     <div id="tickets-container"></div>
-    <button onclick="location.href='trunk.html'" style="margin-top: 20px;">Go to Trunk</button>
-    <button onclick="location.href='start.html'" style="margin-top: 20px;">New Game</button>
+    <div id="last-results"></div>
 </body>
 </html>
