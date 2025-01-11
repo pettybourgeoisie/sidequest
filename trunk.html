@@ -66,13 +66,28 @@
         let fusionDeck = JSON.parse(localStorage.getItem('fusionDeck')) || [];
 
         async function fetchCardImages() {
-            if (cardInstances.length === 0) {
-                cardInstances = trunk.map((cardName, index) => ({
-                    id: `card-${index}-${Date.now()}`,
-                    name: cardName,
-                    imageUrl: `https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg`, // Placeholder for testing
-                    state: "trunk"
-                }));
+            cardInstances = [];
+            for (const cardName of trunk) {
+                const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://images.ygoprodeck.com/images/cards_small/unknown.jpg";
+                    cardInstances.push({
+                        id: `card-${Date.now()}-${Math.random()}`,
+                        name: cardName,
+                        imageUrl,
+                        state: "trunk"
+                    });
+                } catch (error) {
+                    console.error(`Error fetching image for ${cardName}:`, error);
+                    cardInstances.push({
+                        id: `card-${Date.now()}-${Math.random()}`,
+                        name: cardName,
+                        imageUrl: "https://images.ygoprodeck.com/images/cards_small/unknown.jpg",
+                        state: "trunk"
+                    });
+                }
             }
             displayTrunk();
         }
@@ -123,13 +138,11 @@
 
             if (!cardData) return;
 
-            if (cardData.state !== "trunk" && deckId === "trunk") {
+            if (deckId === "trunk") {
                 cardData.state = "trunk";
                 saveState();
                 displayTrunk();
-                createDeckGrid('main-deck', 6, mainDeck);
-                createDeckGrid('side-deck', 1, sideDeck);
-                createDeckGrid('fusion-deck', 1, fusionDeck);
+                refreshDecks();
                 return;
             }
 
@@ -181,11 +194,15 @@
             localStorage.setItem('fusionDeck', JSON.stringify(cardInstances.filter(card => card.state === "fusion-deck")));
         }
 
-        window.onload = async () => {
-            await fetchCardImages();
+        function refreshDecks() {
             createDeckGrid('main-deck', 6, cardInstances.filter(card => card.state === "main-deck"));
             createDeckGrid('side-deck', 1, cardInstances.filter(card => card.state === "side-deck"));
             createDeckGrid('fusion-deck', 1, cardInstances.filter(card => card.state === "fusion-deck"));
+        }
+
+        window.onload = async () => {
+            await fetchCardImages();
+            refreshDecks();
 
             const searchInput = document.getElementById('search-bar');
             searchInput.addEventListener('input', (e) => {
