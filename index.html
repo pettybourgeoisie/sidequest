@@ -44,6 +44,13 @@
             margin-top: 20px;
             font-style: italic;
         }
+        #last-selection img {
+            margin: 10px;
+            width: 100px;
+            height: 140px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
         .top-buttons {
             display: flex;
             justify-content: space-between;
@@ -123,7 +130,7 @@
                     for (let i = 0; i < ticket.spins; i++) {
                         const randomCard = cards[Math.floor(Math.random() * cards.length)];
                         trunk.push(randomCard.name);
-                        lastSelection.push(randomCard.name);
+                        lastSelection.push(randomCard.card_images[0].image_url_small);
                     }
 
                     // Save bank and trunk
@@ -132,9 +139,7 @@
 
                     // Update display
                     document.getElementById('bank').textContent = `Bank: ${bank} points`;
-                    document.getElementById('last-selection').textContent = `Last selection: ${lastSelection.join(', ')}`;
-
-                    // Reload tickets
+                    displayLastSelection();
                     loadTickets();
                 })
                 .catch(error => {
@@ -156,6 +161,16 @@
             return url;
         }
 
+        function displayLastSelection() {
+            const lastSelectionContainer = document.getElementById('last-selection');
+            if (lastSelection.length > 0) {
+                lastSelectionContainer.innerHTML = '<strong>Last selection:</strong>' +
+                    lastSelection.map(url => `<img src="${url}" alt="Card Image">`).join('');
+            } else {
+                lastSelectionContainer.innerHTML = '';
+            }
+        }
+
         function goToTrunk() {
             window.location.href = 'trunk.html';
         }
@@ -170,7 +185,7 @@
 
         window.onload = () => {
             document.getElementById('bank').textContent = `Bank: ${bank} points`;
-            document.getElementById('last-selection').textContent = lastSelection.length ? `Last selection: ${lastSelection.join(', ')}` : '';
+            displayLastSelection();
             loadTickets();
         };
     </script>
