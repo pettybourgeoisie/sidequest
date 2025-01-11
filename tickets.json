@@ -52,5 +52,14 @@
 	"conditions": {
 		"level": 6
 	}
+ },
+ {
+	"ticket_name": "The Legend",
+	"description": "Cards from Legend of Blue Eyes White Dragon",
+	"spins": 6,
+	"cost": 25,
+	"conditions": {
+		"cardset": "Legend of Blue Eyes White Dragon"
+	}
  }
 ]
