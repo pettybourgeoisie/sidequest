@@ -9,15 +9,17 @@
             font-family: Arial, sans-serif;
             margin: 20px;
             display: flex;
-            flex-direction: row;
+            flex-wrap: wrap;
             justify-content: space-between;
         }
         .container {
             width: 48%;
+            margin-bottom: 20px;
         }
         .deckbuilder {
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
         .grid {
             display: grid;
@@ -30,15 +32,15 @@
         }
         .main-deck {
             grid-template-rows: repeat(6, 1fr);
-            height: 360px;
+            height: auto;
         }
         .side-fusion-deck {
             grid-template-rows: 1fr;
-            height: 60px;
+            height: auto;
         }
         .card {
-            width: 100%;
-            height: 100%;
+            width: 100px;
+            height: 140px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -63,8 +65,12 @@
     <script>
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
         let cardImages = [];
+        let mainDeck = JSON.parse(localStorage.getItem('mainDeck')) || [];
+        let sideDeck = JSON.parse(localStorage.getItem('sideDeck')) || [];
+        let fusionDeck = JSON.parse(localStorage.getItem('fusionDeck')) || [];
 
         async function fetchCardImages() {
+            cardImages = [];
             for (const cardName of trunk) {
                 const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
                 try {
@@ -101,22 +107,42 @@
             });
         }
 
-        function createDeckGrid(id, rows) {
+        function createDeckGrid(id, rows, deck) {
             const grid = document.getElementById(id);
+            grid.innerHTML = '';
+
             for (let i = 0; i < rows * 10; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'deck-slot';
                 slot.addEventListener('dragover', (e) => e.preventDefault());
-                slot.addEventListener('drop', (e) => handleDrop(e, grid.id));
+                slot.addEventListener('drop', (e) => handleDrop(e, deck, id));
+
+                if (deck[i]) {
+                    const cardData = deck[i];
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'card';
+                    cardDiv.innerHTML = `<img src="${cardData.imageUrl}" alt="${cardData.name}" title="${cardData.name}">`;
+                    cardDiv.draggable = true;
+                    cardDiv.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify(cardData));
+                        removeCardFromDeck(deck, cardData);
+                        saveDecks();
+                        displayTrunk(cardImages);
+                    });
+                    slot.appendChild(cardDiv);
+                }
                 grid.appendChild(slot);
             }
         }
 
-        function handleDrop(event, deckId) {
+        function handleDrop(event, deck, deckId) {
             event.preventDefault();
             const cardData = JSON.parse(event.dataTransfer.getData('text/plain'));
 
-            // Check if there's a free slot in the deck
+            if (!trunk.find(card => card === cardData.name)) {
+                return;
+            }
+
             const deckGrid = document.getElementById(deckId);
             const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
 
@@ -127,18 +153,33 @@
                 cardDiv.draggable = true;
                 cardDiv.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', JSON.stringify(cardData));
-                    cardDiv.remove();
-                    trunk.push(cardData.name);
-                    localStorage.setItem('trunk', JSON.stringify(trunk));
+                    removeCardFromDeck(deck, cardData);
+                    saveDecks();
                     displayTrunk(cardImages);
                 });
                 emptySlot.appendChild(cardDiv);
+                deck.push(cardData);
 
-                // Remove the card from the Trunk
                 trunk = trunk.filter(card => card !== cardData.name);
+                saveDecks();
                 localStorage.setItem('trunk', JSON.stringify(trunk));
                 displayTrunk(cardImages);
             }
+        }
+
+        function removeCardFromDeck(deck, cardData) {
+            const index = deck.findIndex(card => card.name === cardData.name);
+            if (index !== -1) {
+                deck.splice(index, 1);
+                trunk.push(cardData.name);
+                localStorage.setItem('trunk', JSON.stringify(trunk));
+            }
+        }
+
+        function saveDecks() {
+            localStorage.setItem('mainDeck', JSON.stringify(mainDeck));
+            localStorage.setItem('sideDeck', JSON.stringify(sideDeck));
+            localStorage.setItem('fusionDeck', JSON.stringify(fusionDeck));
         }
 
         function searchTrunk(query) {
@@ -149,11 +190,10 @@
 
         window.onload = async () => {
             await fetchCardImages();
-            createDeckGrid('main-deck', 6);
-            createDeckGrid('side-deck', 1);
-            createDeckGrid('fusion-deck', 1);
+            createDeckGrid('main-deck', 6, mainDeck);
+            createDeckGrid('side-deck', 1, sideDeck);
+            createDeckGrid('fusion-deck', 1, fusionDeck);
 
-            // Attach search bar listener
             const searchInput = document.getElementById('search-bar');
             searchInput.addEventListener('input', (e) => {
                 searchTrunk(e.target.value);
