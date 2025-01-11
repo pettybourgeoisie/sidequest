@@ -71,7 +71,7 @@
     <script>
         let bank = parseInt(localStorage.getItem('bank')) || 500;
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-        let lastSelection = [];
+        let lastSelection = JSON.parse(localStorage.getItem('lastSelectionImages')) || [];
 
         async function loadTickets() {
             try {
@@ -133,9 +133,10 @@
                         lastSelection.push(randomCard.card_images[0].image_url_small);
                     }
 
-                    // Save bank and trunk
+                    // Save bank, trunk, and last selection
                     localStorage.setItem('bank', bank);
                     localStorage.setItem('trunk', JSON.stringify(trunk));
+                    localStorage.setItem('lastSelectionImages', JSON.stringify(lastSelection));
 
                     // Update display
                     document.getElementById('bank').textContent = `Bank: ${bank} points`;
@@ -179,6 +180,7 @@
             if (confirm('Are you sure you want to start a new game? This will reset your progress.')) {
                 localStorage.removeItem('bank');
                 localStorage.removeItem('trunk');
+                localStorage.removeItem('lastSelectionImages');
                 window.location.href = 'start.html';
             }
         }
