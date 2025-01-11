@@ -84,7 +84,7 @@
             const temptation = window.randomTemptations[index];
 
             // Apply cost to bank
-            bank -= temptation.cost;
+            bank += -temptation.cost;
 
             // Add cards to trunk
             if (temptation.add_cards) {
