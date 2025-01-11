@@ -33,21 +33,23 @@
     </style>
     <script>
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+        let cardImages = [];
 
         async function fetchCardImages() {
-            const cardImages = [];
+            const cardImagesList = [];
             for (const cardName of trunk) {
                 const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
                 try {
                     const response = await fetch(apiUrl);
                     const data = await response.json();
                     const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg";
-                    cardImages.push({ name: cardName, imageUrl });
+                    cardImagesList.push({ name: cardName, imageUrl });
                 } catch (error) {
                     console.error(`Error fetching image for ${cardName}:`, error);
-                    cardImages.push({ name: cardName, imageUrl: "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg" });
+                    cardImagesList.push({ name: cardName, imageUrl: "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg" });
                 }
             }
+            cardImages = cardImagesList;
             displayTrunk(cardImages);
         }
 
@@ -74,10 +76,8 @@
             displayTrunk(filteredCards);
         }
 
-        let cardImages = [];
-
         window.onload = async () => {
-            cardImages = await fetchCardImages();
+            await fetchCardImages();
             const searchInput = document.getElementById('search-bar');
             searchInput.addEventListener('input', (e) => {
                 searchTrunk(e.target.value);
