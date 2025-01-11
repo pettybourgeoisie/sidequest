@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sidequest - Tickets</title>
+    <title>Sidequest Tickets</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,23 +40,31 @@
             font-size: 1.2em;
             margin-bottom: 20px;
         }
-        #last-results {
+        #last-selection {
             margin-top: 20px;
-            font-size: 1.1em;
-            color: #333;
+            font-style: italic;
         }
-        #last-results ul {
-            list-style-type: none;
-            padding: 0;
+        .top-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-        #last-results li {
-            margin: 5px 0;
+        .top-buttons button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .top-buttons button:hover {
+            background-color: #218838;
         }
     </style>
     <script>
         let bank = parseInt(localStorage.getItem('bank')) || 500;
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-        let lastResults = [];
+        let lastSelection = [];
 
         async function loadTickets() {
             try {
@@ -81,7 +89,7 @@
                     ticketDiv.innerHTML = `
                         <h3>${ticket.ticket_name}</h3>
                         <p>${ticket.description}</p>
-                        <p>Cost: ${ticket.cost > 0 ? ticket.cost + ' points' : '+' + Math.abs(ticket.cost) + ' points'}</p>
+                        <p>Cost: ${ticket.cost} points</p>
                         <button onclick="selectTicket(${index})">Select</button>
                     `;
                     ticketsContainer.appendChild(ticketDiv);
@@ -93,69 +101,88 @@
             }
         }
 
-        async function selectTicket(index) {
+        function selectTicket(index) {
             const ticket = window.randomTickets[index];
 
-            // Apply cost to bank
+            if (bank < ticket.cost) {
+                alert('Not enough points to select this ticket!');
+                return;
+            }
+
+            // Deduct cost from bank
             bank -= ticket.cost;
 
-            // Fetch cards based on conditions
-            try {
-                let query = `https://db.ygoprodeck.com/api/v7/cardinfo.php?format=goat`;
-                for (const [key, value] of Object.entries(ticket.conditions)) {
-                    if (Array.isArray(value)) {
-                        query += `&${key}=${value.join('|')}`;
-                    } else {
-                        query += `&${key}=${value}`;
+            // Fetch cards from API
+            fetch(buildApiUrl(ticket.conditions))
+                .then(response => response.json())
+                .then(data => {
+                    const cards = data.data;
+
+                    // Randomly select the specified number of spins
+                    lastSelection = [];
+                    for (let i = 0; i < ticket.spins; i++) {
+                        const randomCard = cards[Math.floor(Math.random() * cards.length)];
+                        trunk.push(randomCard.name);
+                        lastSelection.push(randomCard.name);
                     }
-                }
 
-                const response = await fetch(query);
-                const data = await response.json();
-                const cards = data.data;
+                    // Save bank and trunk
+                    localStorage.setItem('bank', bank);
+                    localStorage.setItem('trunk', JSON.stringify(trunk));
 
-                // Select random cards based on spins
-                lastResults = [];
-                for (let i = 0; i < ticket.spins; i++) {
-                    const randomCard = cards[Math.floor(Math.random() * cards.length)];
-                    trunk.push(randomCard.name);
-                    lastResults.push(randomCard.name);
-                }
+                    // Update display
+                    document.getElementById('bank').textContent = `Bank: ${bank} points`;
+                    document.getElementById('last-selection').textContent = `Last selection: ${lastSelection.join(', ')}`;
 
-                // Save data
-                localStorage.setItem('bank', bank);
-                localStorage.setItem('trunk', JSON.stringify(trunk));
-
-                // Update UI
-                document.getElementById('bank').textContent = `Bank: ${bank} points`;
-                displayLastResults();
-                loadTickets();
-            } catch (error) {
-                console.error('Error fetching cards:', error);
-            }
+                    // Reload tickets
+                    loadTickets();
+                })
+                .catch(error => {
+                    console.error('Error fetching cards:', error);
+                });
         }
 
-        function displayLastResults() {
-            const lastResultsContainer = document.getElementById('last-results');
-            if (lastResults.length > 0) {
-                lastResultsContainer.innerHTML = '<strong>Last Results:</strong><ul>' +
-                    lastResults.map(result => `<li>${result}</li>`).join('') + '</ul>';
-            } else {
-                lastResultsContainer.innerHTML = '';
+        function buildApiUrl(conditions) {
+            let url = 'https://db.ygoprodeck.com/api/v7/cardinfo.php?format=goat';
+
+            for (const key in conditions) {
+                if (Array.isArray(conditions[key])) {
+                    url += `&${key}=${conditions[key].join('|')}`;
+                } else {
+                    url += `&${key}=${conditions[key]}`;
+                }
+            }
+
+            return url;
+        }
+
+        function goToTrunk() {
+            window.location.href = 'trunk.html';
+        }
+
+        function startNewGame() {
+            if (confirm('Are you sure you want to start a new game? This will reset your progress.')) {
+                localStorage.removeItem('bank');
+                localStorage.removeItem('trunk');
+                window.location.href = 'start.html';
             }
         }
 
         window.onload = () => {
             document.getElementById('bank').textContent = `Bank: ${bank} points`;
-            displayLastResults();
+            document.getElementById('last-selection').textContent = lastSelection.length ? `Last selection: ${lastSelection.join(', ')}` : '';
             loadTickets();
         };
     </script>
 </head>
 <body>
-    <h1>Sidequest - Select Your Ticket</h1>
+    <div class="top-buttons">
+        <button onclick="goToTrunk()">Go to Trunk</button>
+        <button onclick="startNewGame()">Start New Game</button>
+    </div>
+    <h1>Select Your Ticket</h1>
     <div id="bank">Bank: 500 points</div>
     <div id="tickets-container"></div>
-    <div id="last-results"></div>
+    <div id="last-selection"></div>
 </body>
 </html>
