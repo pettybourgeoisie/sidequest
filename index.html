@@ -70,11 +70,8 @@
 
         function newGame() {
             if (confirm('Are you sure you want to start a new game? This will reset your Bank and clear your Trunk.')) {
-                bank = 500;
-                trunk = [];
                 localStorage.clear();
-                updateBankDisplay();
-                loadTickets();
+                window.location.href = 'start.html';
             }
         }
 
