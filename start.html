@@ -10,6 +10,26 @@
             margin: 20px;
             text-align: center;
         }
+        .bank-input {
+            margin-bottom: 20px;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.2em;
+            width: 100px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
         .temptation {
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -24,33 +44,16 @@
         .temptation p {
             margin: 5px 0;
         }
-        .temptation button {
-            margin-top: 10px;
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        .temptation button:hover {
-            background-color: #0056b3;
-        }
-        #bank {
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
     </style>
     <script>
-        let bank = 500;
-        let trunk = [];
+        let temptations = [];
 
         async function loadTemptations() {
             try {
                 const temptationsResponse = await fetch('temptations.json');
-                const temptations = await temptationsResponse.json();
-
                 const alternativesResponse = await fetch('alternatives.json');
+
+                temptations = await temptationsResponse.json();
                 const alternatives = await alternativesResponse.json();
 
                 // Select two unique random temptations
@@ -64,11 +67,12 @@
 
                 // Select one random alternative
                 const randomAlternative = alternatives[Math.floor(Math.random() * alternatives.length)];
+                randomTemptations.push(randomAlternative);
 
                 const temptationsContainer = document.getElementById('temptations-container');
                 temptationsContainer.innerHTML = '';
 
-                [...randomTemptations, randomAlternative].forEach((temptation, index) => {
+                randomTemptations.forEach((temptation, index) => {
                     const temptationDiv = document.createElement('div');
                     temptationDiv.className = 'temptation';
                     temptationDiv.innerHTML = `
@@ -79,57 +83,44 @@
                     `;
                     temptationsContainer.appendChild(temptationDiv);
                 });
-
-                window.randomTemptations = [...randomTemptations, randomAlternative];
             } catch (error) {
                 console.error('Error loading temptations:', error);
             }
         }
 
-        async function selectTemptation(index) {
-            const temptation = window.randomTemptations[index];
+        function selectTemptation(index) {
+            const bankInput = document.getElementById('bank-input').value;
+            const bankValue = parseInt(bankInput);
 
-            // Apply cost to bank
-            bank += -temptation.cost;
-
-            // Prepare to store card images
-            const lastSelectionImages = [];
-
-            // Fetch card images using API calls if cards are specified
-            if (temptation.add_cards) {
-                trunk.push(...temptation.add_cards);
-                for (const cardName of temptation.add_cards) {
-                    const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
-                    try {
-                        const response = await fetch(apiUrl);
-                        const data = await response.json();
-                        const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg";
-                        lastSelectionImages.push(imageUrl);
-                    } catch (error) {
-                        console.error(`Error fetching image for ${cardName}:`, error);
-                        lastSelectionImages.push("https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg");
-                    }
-                }
+            if (isNaN(bankValue) || bankValue <= 0) {
+                alert('Please enter a valid number greater than 0 for your starting Bank.');
+                return;
             }
 
-            // Save updated trunk, bank, and last selection images
-            localStorage.setItem('bank', bank);
-            localStorage.setItem('trunk', JSON.stringify(trunk));
-            localStorage.setItem('lastSelectionImages', JSON.stringify(lastSelectionImages));
+            const temptation = temptations[index];
+            localStorage.setItem('bank', bankValue + temptation.cost);
 
-            // Redirect to index.html
+            if (temptation.add_cards) {
+                let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+                trunk.push(...temptation.add_cards);
+                localStorage.setItem('trunk', JSON.stringify(trunk));
+            }
+
             window.location.href = 'index.html';
         }
 
         window.onload = () => {
-            document.getElementById('bank').textContent = `Bank: ${bank} points`;
             loadTemptations();
         };
     </script>
 </head>
 <body>
     <h1>Welcome to Sidequest!</h1>
-    <div id="bank">Bank: 500 points</div>
+    <p>Please enter your starting Bank points:</p>
+    <div class="bank-input">
+        <input id="bank-input" type="number" placeholder="Enter points" min="1">
+    </div>
+    <h2>Choose Your Temptation</h2>
     <div id="temptations-container"></div>
 </body>
 </html>
