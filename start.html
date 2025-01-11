@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Your Sidequest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .temptation {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 400px;
+        }
+        .temptation h3 {
+            margin: 0 0 10px;
+        }
+        .temptation p {
+            margin: 5px 0;
+        }
+        .temptation button {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .temptation button:hover {
+            background-color: #0056b3;
+        }
+        #bank {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script>
+        let bank = 500;
+        let trunk = [];
+
+        async function loadTemptations() {
+            try {
+                const response = await fetch('temptations.json');
+                const temptations = await response.json();
+
+                // Select two unique random temptations
+                let randomTemptations = [];
+                while (randomTemptations.length < 2) {
+                    const temp = temptations[Math.floor(Math.random() * temptations.length)];
+                    if (!randomTemptations.includes(temp)) {
+                        randomTemptations.push(temp);
+                    }
+                }
+
+                const temptationsContainer = document.getElementById('temptations-container');
+                temptationsContainer.innerHTML = '';
+
+                randomTemptations.forEach((temptation, index) => {
+                    const temptationDiv = document.createElement('div');
+                    temptationDiv.className = 'temptation';
+                    temptationDiv.innerHTML = `
+                        <h3>${temptation.temptation_name}</h3>
+                        <p>${temptation.description}</p>
+                        <p>Cost: ${temptation.cost > 0 ? temptation.cost + ' points' : '+' + Math.abs(temptation.cost) + ' points'}</p>
+                        <button onclick="selectTemptation(${index})">Select</button>
+                    `;
+                    temptationsContainer.appendChild(temptationDiv);
+                });
+
+                window.randomTemptations = randomTemptations;
+            } catch (error) {
+                console.error('Error loading temptations:', error);
+            }
+        }
+
+        function selectTemptation(index) {
+            const temptation = window.randomTemptations[index];
+
+            // Apply cost to bank
+            bank += temptation.cost;
+
+            // Add cards to trunk
+            if (temptation.add_cards) {
+                trunk.push(...temptation.add_cards);
+            }
+
+            // Save data and redirect
+            localStorage.setItem('bank', bank);
+            localStorage.setItem('trunk', JSON.stringify(trunk));
+            window.location.href = 'index.html';
+        }
+
+        window.onload = () => {
+            // Initialize bank and trunk for a new game
+            bank = 500;
+            trunk = [];
+            localStorage.setItem('bank', bank);
+            localStorage.setItem('trunk', JSON.stringify(trunk));
+
+            document.getElementById('bank').textContent = `Bank: ${bank} points`;
+            loadTemptations();
+        };
+    </script>
+</head>
+<body>
+    <h1>Welcome to Sidequest!</h1>
+    <div id="bank">Bank: 500 points</div>
+    <div id="temptations-container"></div>
+</body>
+</html>
