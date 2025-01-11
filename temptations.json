@@ -1,10 +1,75 @@
 [
+    {
+        "temptation_name": "Full Trinity",
+        "description": "Begin the game with full trinity",
+        "cost": 250,
+        "add_cards": [
+            "Pot of Greed",
+            "Graceful Charity",
+            "Delinquent Duo"
+        ]
+    }
+
 {
-    "temptation_name": "Full Trinity",
-    "description": "Begin the game with full trinity",
-    "cost": 250,
-    "effect": 
-}
+        "temptation_name": "Turbo Package",
+        "description": "Begin the game with a Turbo shell",
+        "cost": 500,
+        "add_cards": [
+            "Black Luster Soldier - Envoy of the Beginning",
+            "Chaos Sorcerer",
+            "Thunder Dragon",
+            "Thunder Dragon",
+            "Thunder Dragon",
+            "Gravekeeper's Spy",
+            "Gravekeeper's Spy",
+            "Dekoichi the Battlechanted Locomotive",
+            "Dekoichi the Battlechanted Locomotive",
+            "Magician of Faith"
+        ]
+    }
+
+{
+        "temptation_name": "Warrior Package",
+        "description": "Begin the game with a Warrior shell",
+        "cost": 400,
+        "add_cards": [
+            "Black Luster Soldier - Envoy of the Beginning",
+            "Blade Knight",
+            "Exiled Force",
+            "Mystic Swordsman LV2",
+            "Ninja Grandmaster Sasuke",
+            "Solemn Judgment",
+            "Solemn Judgment",
+            "Dust Tornado",
+            "Reinforcement of the Army",
+            "Reinforcement of the Army"
+        ]
+    }
+
+{
+        "temptation_name": "Goat Control Package",
+        "description": "Begin the game with a Goat Control shell",
+        "cost": 400,
+        "add_cards": [
+            "Black Luster Soldier - Envoy of the Beginning",
+            "Scapegoat",
+            "Scapegoat",
+            "Metamorphosis",
+            "Metamorphosis",
+            "Dark Mimic LV1",
+            "Dekoichi the Battlechanted Locomotive",
+            "Dekoichi the Battlechanted Locomotive",
+            "Tsukuyomi",
+            "Tsukuyomi"
+        ]
+    }        
+
+{
+        "temptation_name": "Mokey Mokey Smackdown",
+        "description": "Replace every first spun card from EVERY ticket with Mokey Mokey",
+        "cost": -2000,
+        "first_pick": "Mokey Mokey"
+    }
 
 
 ]
