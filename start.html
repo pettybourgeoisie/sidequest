@@ -68,65 +68,60 @@
                 const temptationsContainer = document.getElementById('temptations-container');
                 temptationsContainer.innerHTML = '';
 
-                randomTemptations.forEach((temptation, index) => {
+                [...randomTemptations, randomAlternative].forEach((temptation, index) => {
                     const temptationDiv = document.createElement('div');
                     temptationDiv.className = 'temptation';
                     temptationDiv.innerHTML = `
                         <h3>${temptation.temptation_name}</h3>
                         <p>${temptation.description}</p>
                         <p>Cost: ${temptation.cost > 0 ? temptation.cost + ' points' : '+' + Math.abs(temptation.cost) + ' points'}</p>
-                        <button onclick="selectTemptation(${index}, false)">Select</button>
+                        <button onclick="selectTemptation(${index})">Select</button>
                     `;
                     temptationsContainer.appendChild(temptationDiv);
                 });
 
-                const alternativeDiv = document.createElement('div');
-                alternativeDiv.className = 'temptation';
-                alternativeDiv.innerHTML = `
-                    <h3>${randomAlternative.temptation_name}</h3>
-                    <p>${randomAlternative.description}</p>
-                    <p>Cost: ${randomAlternative.cost > 0 ? randomAlternative.cost + ' points' : '+' + Math.abs(randomAlternative.cost) + ' points'}</p>
-                    <button onclick="selectTemptation(${randomTemptations.length}, true)">Select</button>
-                `;
-                temptationsContainer.appendChild(alternativeDiv);
-
-                window.randomTemptations = randomTemptations;
-                window.randomAlternative = randomAlternative;
+                window.randomTemptations = [...randomTemptations, randomAlternative];
             } catch (error) {
-                console.error('Error loading temptations or alternatives:', error);
+                console.error('Error loading temptations:', error);
             }
         }
 
-        function selectTemptation(index, isAlternative) {
-            let selection;
-
-            if (isAlternative) {
-                selection = window.randomAlternative;
-            } else {
-                selection = window.randomTemptations[index];
-            }
+        async function selectTemptation(index) {
+            const temptation = window.randomTemptations[index];
 
             // Apply cost to bank
-            bank += -selection.cost;
+            bank += -temptation.cost;
 
-            // Add cards to trunk
-            if (selection.add_cards) {
-                trunk.push(...selection.add_cards);
+            // Prepare to store card images
+            const lastSelectionImages = [];
+
+            // Fetch card images using API calls if cards are specified
+            if (temptation.add_cards) {
+                trunk.push(...temptation.add_cards);
+                for (const cardName of temptation.add_cards) {
+                    const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
+                    try {
+                        const response = await fetch(apiUrl);
+                        const data = await response.json();
+                        const imageUrl = data.data[0]?.card_images[0]?.image_url_small || "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg";
+                        lastSelectionImages.push(imageUrl);
+                    } catch (error) {
+                        console.error(`Error fetching image for ${cardName}:`, error);
+                        lastSelectionImages.push("https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg");
+                    }
+                }
             }
 
-            // Save data and redirect
+            // Save updated trunk, bank, and last selection images
             localStorage.setItem('bank', bank);
             localStorage.setItem('trunk', JSON.stringify(trunk));
+            localStorage.setItem('lastSelectionImages', JSON.stringify(lastSelectionImages));
+
+            // Redirect to index.html
             window.location.href = 'index.html';
         }
 
         window.onload = () => {
-            // Initialize bank and trunk for a new game
-            bank = 500;
-            trunk = [];
-            localStorage.setItem('bank', bank);
-            localStorage.setItem('trunk', JSON.stringify(trunk));
-
             document.getElementById('bank').textContent = `Bank: ${bank} points`;
             loadTemptations();
         };
