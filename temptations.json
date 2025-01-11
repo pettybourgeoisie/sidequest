@@ -64,12 +64,5 @@
         ]
     }        
 
-{
-        "temptation_name": "Mokey Mokey Smackdown",
-        "description": "Replace every first spun card from EVERY ticket with Mokey Mokey",
-        "cost": -2000,
-        "first_pick": "Mokey Mokey"
-    }
-
 
 ]
