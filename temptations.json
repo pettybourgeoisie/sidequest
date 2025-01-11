@@ -9,8 +9,7 @@
             "Delinquent Duo"
         ]
     },
-
-{
+    {
         "temptation_name": "Turbo Package",
         "description": "Begin the game with a Turbo shell",
         "cost": 500,
@@ -27,8 +26,7 @@
             "Magician of Faith"
         ]
     },
-
-{
+    {
         "temptation_name": "Warrior Package",
         "description": "Begin the game with a Warrior shell",
         "cost": 400,
@@ -45,8 +43,7 @@
             "Reinforcement of the Army"
         ]
     },
-
-{
+    {
         "temptation_name": "Goat Control Package",
         "description": "Begin the game with a Goat Control shell",
         "cost": 400,
