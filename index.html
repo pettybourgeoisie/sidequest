@@ -167,8 +167,10 @@
             if (lastSelection.length > 0) {
                 lastSelectionContainer.innerHTML = '<strong>Last selection:</strong>' +
                     lastSelection.map(url => `<img src="${url}" alt="Card Image">`).join('');
+                lastSelectionContainer.style.display = 'block';
             } else {
-                lastSelectionContainer.innerHTML = '';
+                lastSelectionContainer.innerHTML = '<strong>No previous selections.</strong>';
+                lastSelectionContainer.style.display = 'block';
             }
         }
 
