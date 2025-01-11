@@ -47,8 +47,10 @@
 
         async function loadTemptations() {
             try {
-                const response = await fetch('temptations.json');
-                const temptations = await response.json();
+                const temptationsResponse = await fetch('temptations.json');
+                const alternativesResponse = await fetch('alternatives.json');
+                const temptations = await temptationsResponse.json();
+                const alternatives = await alternativesResponse.json();
 
                 // Select two unique random temptations
                 let randomTemptations = [];
@@ -59,10 +61,13 @@
                     }
                 }
 
+                // Select one random alternative
+                const randomAlternative = alternatives[Math.floor(Math.random() * alternatives.length)];
+
                 const temptationsContainer = document.getElementById('temptations-container');
                 temptationsContainer.innerHTML = '';
 
-                randomTemptations.forEach((temptation, index) => {
+                [...randomTemptations, randomAlternative].forEach((temptation, index) => {
                     const temptationDiv = document.createElement('div');
                     temptationDiv.className = 'temptation';
                     temptationDiv.innerHTML = `
@@ -74,7 +79,7 @@
                     temptationsContainer.appendChild(temptationDiv);
                 });
 
-                window.randomTemptations = randomTemptations;
+                window.randomTemptations = [...randomTemptations, randomAlternative];
             } catch (error) {
                 console.error('Error loading temptations:', error);
             }
@@ -94,7 +99,7 @@
             // Save data and redirect
             localStorage.setItem('bank', bank);
             localStorage.setItem('trunk', JSON.stringify(trunk));
-            window.location.href = 'index.html';
+            window.location.href = 'start.html';
         }
 
         window.onload = () => {

@@ -1,0 +1,7 @@
+[
+    {
+        "temptation_name": "Thrifty Spender",
+        "description": "Begin the game with 500 extra points",
+        "cost": -500
+    }
+]
