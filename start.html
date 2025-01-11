@@ -48,8 +48,9 @@
         async function loadTemptations() {
             try {
                 const temptationsResponse = await fetch('temptations.json');
-                const alternativesResponse = await fetch('alternatives.json');
                 const temptations = await temptationsResponse.json();
+
+                const alternativesResponse = await fetch('alternatives.json');
                 const alternatives = await alternativesResponse.json();
 
                 // Select two unique random temptations
@@ -67,39 +68,56 @@
                 const temptationsContainer = document.getElementById('temptations-container');
                 temptationsContainer.innerHTML = '';
 
-                [...randomTemptations, randomAlternative].forEach((temptation, index) => {
+                randomTemptations.forEach((temptation, index) => {
                     const temptationDiv = document.createElement('div');
                     temptationDiv.className = 'temptation';
                     temptationDiv.innerHTML = `
                         <h3>${temptation.temptation_name}</h3>
                         <p>${temptation.description}</p>
                         <p>Cost: ${temptation.cost > 0 ? temptation.cost + ' points' : '+' + Math.abs(temptation.cost) + ' points'}</p>
-                        <button onclick="selectTemptation(${index})">Select</button>
+                        <button onclick="selectTemptation(${index}, false)">Select</button>
                     `;
                     temptationsContainer.appendChild(temptationDiv);
                 });
 
-                window.randomTemptations = [...randomTemptations, randomAlternative];
+                const alternativeDiv = document.createElement('div');
+                alternativeDiv.className = 'temptation';
+                alternativeDiv.innerHTML = `
+                    <h3>${randomAlternative.temptation_name}</h3>
+                    <p>${randomAlternative.description}</p>
+                    <p>Cost: ${randomAlternative.cost > 0 ? randomAlternative.cost + ' points' : '+' + Math.abs(randomAlternative.cost) + ' points'}</p>
+                    <button onclick="selectTemptation(${randomTemptations.length}, true)">Select</button>
+                `;
+                temptationsContainer.appendChild(alternativeDiv);
+
+                window.randomTemptations = randomTemptations;
+                window.randomAlternative = randomAlternative;
             } catch (error) {
-                console.error('Error loading temptations:', error);
+                console.error('Error loading temptations or alternatives:', error);
             }
         }
 
-        function selectTemptation(index) {
-            const temptation = window.randomTemptations[index];
+        function selectTemptation(index, isAlternative) {
+            let selection;
+
+            if (isAlternative) {
+                selection = window.randomAlternative;
+            } else {
+                selection = window.randomTemptations[index];
+            }
 
             // Apply cost to bank
-            bank += -temptation.cost;
+            bank += -selection.cost;
 
             // Add cards to trunk
-            if (temptation.add_cards) {
-                trunk.push(...temptation.add_cards);
+            if (selection.add_cards) {
+                trunk.push(...selection.add_cards);
             }
 
             // Save data and redirect
             localStorage.setItem('bank', bank);
             localStorage.setItem('trunk', JSON.stringify(trunk));
-            window.location.href = 'start.html';
+            window.location.href = 'index.html';
         }
 
         window.onload = () => {
