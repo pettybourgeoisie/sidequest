@@ -10,26 +10,6 @@
             margin: 20px;
             text-align: center;
         }
-        .bank-input {
-            margin-bottom: 20px;
-        }
-        input[type="number"] {
-            padding: 10px;
-            font-size: 1.2em;
-            width: 100px;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 1.1em;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
         .temptation {
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -44,16 +24,33 @@
         .temptation p {
             margin: 5px 0;
         }
+        .temptation button {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .temptation button:hover {
+            background-color: #0056b3;
+        }
+        #bank {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
     </style>
     <script>
-        let temptations = [];
+        let bank = 500;
+        let trunk = [];
 
         async function loadTemptations() {
             try {
                 const temptationsResponse = await fetch('temptations.json');
-                const alternativesResponse = await fetch('alternatives.json');
+                const temptations = await temptationsResponse.json();
 
-                temptations = await temptationsResponse.json();
+                const alternativesResponse = await fetch('alternatives.json');
                 const alternatives = await alternativesResponse.json();
 
                 // Select two unique random temptations
@@ -67,7 +64,6 @@
 
                 // Select one random alternative
                 const randomAlternative = alternatives[Math.floor(Math.random() * alternatives.length)];
-                randomTemptations.push(randomAlternative);
 
                 const temptationsContainer = document.getElementById('temptations-container');
                 temptationsContainer.innerHTML = '';
@@ -79,48 +75,66 @@
                         <h3>${temptation.temptation_name}</h3>
                         <p>${temptation.description}</p>
                         <p>Cost: ${temptation.cost > 0 ? temptation.cost + ' points' : '+' + Math.abs(temptation.cost) + ' points'}</p>
-                        <button onclick="selectTemptation(${index})">Select</button>
+                        <button onclick="selectTemptation(${index}, false)">Select</button>
                     `;
                     temptationsContainer.appendChild(temptationDiv);
                 });
+
+                const alternativeDiv = document.createElement('div');
+                alternativeDiv.className = 'temptation';
+                alternativeDiv.innerHTML = `
+                    <h3>${randomAlternative.temptation_name}</h3>
+                    <p>${randomAlternative.description}</p>
+                    <p>Cost: ${randomAlternative.cost > 0 ? randomAlternative.cost + ' points' : '+' + Math.abs(randomAlternative.cost) + ' points'}</p>
+                    <button onclick="selectTemptation(${randomTemptations.length}, true)">Select</button>
+                `;
+                temptationsContainer.appendChild(alternativeDiv);
+
+                window.randomTemptations = randomTemptations;
+                window.randomAlternative = randomAlternative;
             } catch (error) {
-                console.error('Error loading temptations:', error);
+                console.error('Error loading temptations or alternatives:', error);
             }
         }
 
-        function selectTemptation(index) {
-            const bankInput = document.getElementById('bank-input').value;
-            const bankValue = parseInt(bankInput);
+        function selectTemptation(index, isAlternative) {
+            let selection;
 
-            if (isNaN(bankValue) || bankValue <= 0) {
-                alert('Please enter a valid number greater than 0 for your starting Bank.');
-                return;
+            if (isAlternative) {
+                selection = window.randomAlternative;
+            } else {
+                selection = window.randomTemptations[index];
             }
 
-            const temptation = temptations[index];
-            localStorage.setItem('bank', bankValue + temptation.cost);
+            // Apply cost to bank
+            bank += -selection.cost;
 
-            if (temptation.add_cards) {
-                let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
-                trunk.push(...temptation.add_cards);
-                localStorage.setItem('trunk', JSON.stringify(trunk));
+            // Add cards to trunk
+            if (selection.add_cards) {
+                trunk.push(...selection.add_cards);
             }
 
+            // Save data and redirect
+            localStorage.setItem('bank', bank);
+            localStorage.setItem('trunk', JSON.stringify(trunk));
             window.location.href = 'index.html';
         }
 
         window.onload = () => {
+            // Initialize bank and trunk for a new game
+            bank = 500;
+            trunk = [];
+            localStorage.setItem('bank', bank);
+            localStorage.setItem('trunk', JSON.stringify(trunk));
+
+            document.getElementById('bank').textContent = `Bank: ${bank} points`;
             loadTemptations();
         };
     </script>
 </head>
 <body>
     <h1>Welcome to Sidequest!</h1>
-    <p>Please enter your starting Bank points:</p>
-    <div class="bank-input">
-        <input id="bank-input" type="number" placeholder="Enter points" min="1">
-    </div>
-    <h2>Choose Your Temptation</h2>
+    <div id="bank">Bank: 500 points</div>
     <div id="temptations-container"></div>
 </body>
 </html>
