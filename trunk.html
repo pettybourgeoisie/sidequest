@@ -3,27 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Trunk</title>
+    <title>Your Trunk and Deckbuilder</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            text-align: center;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
         }
-        .search-bar {
+        .container {
+            width: 48%;
+        }
+        .deckbuilder {
+            display: flex;
+            flex-direction: column;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
             margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .main-deck {
+            grid-template-rows: repeat(6, 1fr);
+            height: 360px;
+        }
+        .side-fusion-deck {
+            grid-template-rows: 1fr;
+            height: 60px;
         }
         .card {
-            display: inline-block;
-            margin: 10px;
-            width: 100px;
-            height: 140px;
-        }
-        .card img {
             width: 100%;
             height: 100%;
             border: 1px solid #ccc;
             border-radius: 5px;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+        }
+        .deck-slot {
+            border: 2px dashed #bbb;
+            min-height: 100px;
+            background-color: #fff;
+        }
+        .search-bar {
+            margin-bottom: 20px;
         }
         .message {
             margin-top: 20px;
@@ -33,9 +62,9 @@
     </style>
     <script>
         let trunk = JSON.parse(localStorage.getItem('trunk')) || [];
+        let cardImages = [];
 
         async function fetchCardImages() {
-            const cardImages = [];
             for (const cardName of trunk) {
                 const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
                 try {
@@ -48,7 +77,7 @@
                     cardImages.push({ name: cardName, imageUrl: "https://storage.googleapis.com/ygoprodeck.com/pics_small/unknown.jpg" });
                 }
             }
-            return cardImages;
+            displayTrunk(cardImages);
         }
 
         function displayTrunk(cards) {
@@ -63,9 +92,53 @@
             cards.forEach(card => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card';
+                cardDiv.draggable = true;
                 cardDiv.innerHTML = `<img src="${card.imageUrl}" alt="${card.name}" title="${card.name}">`;
+                cardDiv.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify(card));
+                });
                 trunkContainer.appendChild(cardDiv);
             });
+        }
+
+        function createDeckGrid(id, rows) {
+            const grid = document.getElementById(id);
+            for (let i = 0; i < rows * 10; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'deck-slot';
+                slot.addEventListener('dragover', (e) => e.preventDefault());
+                slot.addEventListener('drop', (e) => handleDrop(e, grid.id));
+                grid.appendChild(slot);
+            }
+        }
+
+        function handleDrop(event, deckId) {
+            event.preventDefault();
+            const cardData = JSON.parse(event.dataTransfer.getData('text/plain'));
+
+            // Check if there's a free slot in the deck
+            const deckGrid = document.getElementById(deckId);
+            const emptySlot = Array.from(deckGrid.children).find(slot => !slot.firstChild);
+
+            if (emptySlot) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.innerHTML = `<img src="${cardData.imageUrl}" alt="${cardData.name}" title="${cardData.name}">`;
+                cardDiv.draggable = true;
+                cardDiv.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify(cardData));
+                    cardDiv.remove();
+                    trunk.push(cardData.name);
+                    localStorage.setItem('trunk', JSON.stringify(trunk));
+                    displayTrunk(cardImages);
+                });
+                emptySlot.appendChild(cardDiv);
+
+                // Remove the card from the Trunk
+                trunk = trunk.filter(card => card !== cardData.name);
+                localStorage.setItem('trunk', JSON.stringify(trunk));
+                displayTrunk(cardImages);
+            }
         }
 
         function searchTrunk(query) {
@@ -74,11 +147,11 @@
             displayTrunk(filteredCards);
         }
 
-        let cardImages = [];
-
         window.onload = async () => {
-            cardImages = await fetchCardImages();
-            displayTrunk(cardImages);
+            await fetchCardImages();
+            createDeckGrid('main-deck', 6);
+            createDeckGrid('side-deck', 1);
+            createDeckGrid('fusion-deck', 1);
 
             // Attach search bar listener
             const searchInput = document.getElementById('search-bar');
@@ -89,9 +162,19 @@
     </script>
 </head>
 <body>
-    <h1>Your Trunk</h1>
-    <input id="search-bar" class="search-bar" type="text" placeholder="Search cards...">
-    <div id="trunk"></div>
-    <button onclick="window.location.href='index.html'" style="margin-top: 20px;">Back to Game</button>
+    <div class="container">
+        <h1>Your Trunk</h1>
+        <input id="search-bar" class="search-bar" type="text" placeholder="Search cards...">
+        <div id="trunk"></div>
+    </div>
+    <div class="container deckbuilder">
+        <h2>Main Deck</h2>
+        <div id="main-deck" class="grid main-deck"></div>
+        <h2>Side Deck</h2>
+        <div id="side-deck" class="grid side-fusion-deck"></div>
+        <h2>Fusion Deck</h2>
+        <div id="fusion-deck" class="grid side-fusion-deck"></div>
+        <button onclick="window.location.href='index.html'" style="margin-top: 20px;">Back to Game</button>
+    </div>
 </body>
 </html>
